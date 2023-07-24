@@ -25,13 +25,14 @@ import Hotkeys from 'components/Hotkeys';
 import SettingsModal from 'components/settingsModal';
 import Socket from 'components/socket';
 
-import { useAuth } from 'hooks/auth';
+import { useAuth } from 'hooks/oktaauth';
 
 import { clientState } from 'state/client';
 import { settingsState } from 'state/settings';
 import { accessTokenState, roleState } from 'state/user';
 
 import './App.css';
+import { LoginCallback } from '@okta/okta-react';
 
 const router = createBrowserRouter([
   {
@@ -68,7 +69,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/api/auth/callback',
-    element: <AuthCallback />
+    element: <LoginCallback />
   },
   {
     path: '*',
@@ -81,7 +82,7 @@ function App() {
   const { theme: themeVariant } = useRecoilValue(settingsState);
   const [accessToken, setAccessToken] = useRecoilState(accessTokenState);
   const setRole = useSetRecoilState(roleState);
-  const { isAuthenticated, getAccessTokenSilently, logout } = useAuth();
+  const { isAuthenticated, getAccessTokenSilently, logout } = useAuth()
   const theme = makeTheme(themeVariant);
 
   useEffect(() => {
@@ -90,20 +91,30 @@ function App() {
 
   useEffect(() => {
     if (isAuthenticated && accessToken === undefined) {
-      getAccessTokenSilently({
-        authorizationParams: {
-          audience: 'chainlit-cloud'
-        }
-      })
-        .then((token) => setAccessToken(token))
-        .catch((err) => {
-          console.error(err);
-          logout({
-            logoutParams: {
-              returnTo: window.location.origin
-            }
-          });
-        });
+      getAccessTokenSilently()
+      .then(token => setAccessToken(token.tokens.accessToken?.accessToken))
+      .catch((err) => {
+        console.error(err);
+        logout(
+        //   {
+        //   logoutParams: {
+        //     returnTo: window.location.origin
+        //   }
+        // }
+        );
+      });
+      // if (token){
+      //   console.log('App] Access token found', token)
+      //   setAccessToken(token);
+      // } else {
+      //   console.log('[App] No access token found. Logging out.');
+      //   logout({
+      //     // logoutParams: {
+      //       // returnTo: window.location.origin
+      //     // }
+      //   });
+      // } 
+
     }
   }, [isAuthenticated, getAccessTokenSilently, accessToken, setAccessToken]);
 
@@ -141,7 +152,9 @@ function App() {
           }
         }}
       />
+      <h1>hello from outside muibox</h1>
       <Box display="flex" height="100vh" width="100vw">
+        <h1>Welcome to our app</h1>
         <Socket />
         <Hotkeys />
         <SettingsModal />

@@ -4,7 +4,7 @@ import { memo, useEffect } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 import io from 'socket.io-client';
 
-import { useAuth } from 'hooks/auth';
+import { useAuth } from 'hooks/oktaauth';
 
 import { IAction, actionState } from 'state/action';
 import {
@@ -49,7 +49,7 @@ export default memo(function Socket() {
     const socket = io(wsEndpoint, {
       path: '/ws/socket.io',
       extraHeaders: {
-        Authorization: accessToken || '',
+        Authorization: accessToken?.accessToken || '',
         'user-env': JSON.stringify(userEnv)
       }
     });

@@ -1,31 +1,47 @@
-import { Auth0Provider } from '@auth0/auth0-react';
+//import { Auth0Provider } from '@auth0/auth0-react';
+import { SecureRoute, Security, LoginCallback } from '@okta/okta-react';
+import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
 import { memo } from 'react';
-import { useRecoilValue } from 'recoil';
+import { createBrowserHistory } from 'history';
+//import { useRecoilValue } from 'recoil';
 
-import { projectSettingsState } from 'state/project';
+//import { projectSettingsState } from 'state/project';
 
+// import { useHistory } from 'react-router-dom';
 interface Props {
   children: JSX.Element;
 }
+const history = createBrowserHistory();
+
+const oktaAuth = new OktaAuth({
+  issuer: 'https://trial-5130133.okta.com',
+  clientId: '0oa6hhqn45VWeqNdH697',
+  redirectUri: window.location.origin + '/api/auth/callback',
+  scopes: ['openid', 'profile', 'email'],
+});
 
 export default memo(function AuthProvider({ children }: Props) {
-  const pSettings = useRecoilValue(projectSettingsState);
+  //const pSettings = useRecoilValue(projectSettingsState);
 
-  if (pSettings?.project?.id) {
+  const restoreOriginalUri = async (_oktaAuth: any, originalUri: any) => {
+    console.log('[AuthProvider] felix was here');
+    history.replace(toRelativeUrl(originalUri || '/', window.location.origin));
+  };
+
     return (
-      <Auth0Provider
-        domain="https://auth.chainlit.io"
-        clientId="ADo93BBXDn8Z35lEi8arCWiR7C0ncrjx"
-        authorizationParams={{
-          redirect_uri: `${window.location.origin}/api/auth/callback`
-        }}
-        useRefreshTokens={true}
-        cacheLocation="localstorage"
-      >
+      // <Auth0Provider
+      //   domain="https://trial-5130133.okta.com"
+      //   clientId="0oa6hhqn45VWeqNdH697"
+      //   issuer='https://trial-5130133.okta.com'
+      //   authorizationParams={{
+      //     redirect_uri: `${window.location.origin}/api/auth/callback`
+      //   }}
+      //   useRefreshTokens={false}
+      //   cacheLocation="localstorage"
+      // >
+      <Security oktaAuth={oktaAuth} restoreOriginalUri={restoreOriginalUri}>
         {children}
-      </Auth0Provider>
+      </Security>
+      // </Auth0Provider>
     );
-  } else {
-    return <>{children}</>;
-  }
 });

@@ -14,10 +14,11 @@ import {
   Typography
 } from '@mui/material';
 
-import { useAuth } from 'hooks/auth';
+import { useAuth } from 'hooks/oktaauth';
 
 import { projectSettingsState } from 'state/project';
 import { settingsState } from 'state/settings';
+import { useOktaAuth } from '@okta/okta-react';
 
 interface Props {
   anchorEl: null | HTMLElement;
@@ -30,7 +31,7 @@ export default function UserMenu({ anchorEl, open, handleClose }: Props) {
   const pSettings = useRecoilValue(projectSettingsState);
   const setAppSettings = useSetRecoilState(settingsState);
   const requiredKeys = !!pSettings?.project?.user_env?.length;
-
+  const { oktaAuth, authState } = useOktaAuth();
   const userNameItem = user && (
     <ListItem key="user-name" sx={{ display: 'flex', flexDirection: 'column' }}>
       <Typography width="100%" fontSize="14px" fontWeight={700}>
@@ -73,11 +74,7 @@ export default function UserMenu({ anchorEl, open, handleClose }: Props) {
     <MenuItem
       key="logout"
       onClick={() => {
-        logout({
-          logoutParams: {
-            returnTo: window.location.origin
-          }
-        });
+        oktaAuth.signOut({postLogoutRedirectUri: '/'});
         handleClose();
       }}
     >

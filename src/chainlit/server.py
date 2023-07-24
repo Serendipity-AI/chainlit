@@ -210,6 +210,8 @@ async def completion(completion: CompletionRequest):
 @app.get("/project/settings")
 async def project_settings():
     """Return project settings. This is called by the UI before the establishing the websocket connection."""
+    logger.info("Project settings requested")
+    logger.info(f"Project: {config.project.to_dict()}")
     return JSONResponse(
         content={
             "chainlitServer": config.chainlit_server,
@@ -246,7 +248,10 @@ async def get_member_role(request: Request):
     """Get the role of a member."""
 
     auth_client = await get_auth_client_from_request(request)
+    print(auth_client)
+    print(auth_client.user_infos)
     role = auth_client.user_infos["role"] if auth_client.user_infos else "ANONYMOUS"
+    print(role)
     return PlainTextResponse(content=role)
 
 

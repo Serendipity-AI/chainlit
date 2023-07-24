@@ -3,8 +3,9 @@ from fastapi import Request
 from chainlit.config import config
 from chainlit.client.base import BaseDBClient, BaseAuthClient, UserDict
 from chainlit.client.local import LocalAuthClient, LocalDBClient
-from chainlit.client.cloud import CloudAuthClient, CloudDBClient
+from chainlit.client.cloud import CloudAuthClient, CloudDBClient, OktaAuthClient
 from chainlit.telemetry import trace_event
+from chainlit.logger import logger
 
 
 async def get_auth_client(authorization: str) -> BaseAuthClient:
@@ -12,16 +13,24 @@ async def get_auth_client(authorization: str) -> BaseAuthClient:
     if not config.project.public and not authorization:
         # Refuse connection if the app is private and no access token is provided
         trace_event("no_access_token")
-        raise ConnectionRefusedError("No access token provided")
+        #raise ConnectionRefusedError("No access token provided")
     elif authorization and config.project.id:
-        # Create the auth cloud client
-        auth_client = CloudAuthClient(
-            project_id=config.project.id,
-            access_token=authorization,
-        )
+        print(config.project)
+        if config.project.auth == "self-hosted":
+            auth_client = OktaAuthClient(
+                project_id=config.project.id,
+                access_token=authorization,
+            )
+        else:
+            # Create the auth cloud client
+            auth_client = CloudAuthClient(
+                project_id=config.project.id,
+                access_token=authorization,
+            )
         # Check if the user is a member of the project
         is_project_member = await auth_client.is_project_member()
         if not is_project_member:
+            logger.error("User is not a member of the project")
             raise ConnectionRefusedError("User is not a member of the project")
 
         return auth_client

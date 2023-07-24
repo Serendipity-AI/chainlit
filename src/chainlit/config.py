@@ -66,7 +66,7 @@ generated_by = "{__version__}"
 """
 
 chainlit_prod_url = os.environ.get("CHAINLIT_PROD_URL")
-chainlit_server = "https://cloud.chainlit.io"
+chainlit_server = "http://localhost"
 
 
 DEFAULT_HOST = "0.0.0.0"
@@ -162,7 +162,9 @@ class ProjectSettings:
     # Path to the local file system
     local_fs_path: str = None
     # Duration (in seconds) during which the session is saved when the connection is lost
-    session_timeout: int = 3600
+    session_timeout: int = 1000
+    # Whether the project is hosted on a self-hosted auth account or on the chainlit cloud
+    auth: Optional[Literal["self-hosted", "chainlit"]] = None
 
 
 @dataclass()
@@ -242,8 +244,7 @@ def load_settings():
 
         ui_settings = UISettings(**ui_settings)
 
-        if not project_settings.public and not project_settings.id:
-            raise ValueError("Project ID is required when public is set to false.")
+        
 
         return {
             "ui": ui_settings,

@@ -12,9 +12,10 @@ import webbrowser
 import os
 import json
 
+logger.info("Loading auth module..")
 
-AUTH0_DOMAIN = "auth.chainlit.io"
-AUTH0_CLIENT_ID = "ADo93BBXDn8Z35lEi8arCWiR7C0ncrjx"
+AUTH0_DOMAIN = "trial-5130133.okta.com/oauth2/v1"
+AUTH0_CLIENT_ID = "0oa6hhqn45VWeqNdH697"
 ALGORITHMS = ["HS256"]
 
 
@@ -41,6 +42,7 @@ def is_logged_in():
     """
     Returns true if the user is logged in
     """
+    logger.info("Checking if logged in...")
     if not os.path.exists(get_credentials_path()):
         return False
     with open(get_credentials_path(), "r", encoding="utf-8") as f:
@@ -71,6 +73,8 @@ def validate_token(token):
     """
     jwks_url = "https://{}/.well-known/jwks.json".format(AUTH0_DOMAIN)
     issuer = "https://{}/".format(AUTH0_DOMAIN)
+    logger.info("Validating token...")
+    logger.info("JWKS URL: {}".format(jwks_url))
     sv = AsymmetricSignatureVerifier(jwks_url)
     tv = TokenVerifier(signature_verifier=sv, issuer=issuer, audience=AUTH0_CLIENT_ID)
     return tv.verify(token)
@@ -97,8 +101,7 @@ def login():
 
     device_code_payload = {
         "client_id": AUTH0_CLIENT_ID,
-        "scope": "openid profile email",
-        "audience": "chainlit-cloud",
+        "scope": "openid profile email"
     }
     device_code_response = requests.post(
         "https://{}/oauth/device/code".format(AUTH0_DOMAIN), data=device_code_payload
@@ -122,8 +125,11 @@ def login():
     authenticated = False
     while not authenticated:
         token_response = requests.post(
-            "https://{}/oauth/token".format(AUTH0_DOMAIN), data=token_payload
+            "https://{}/token".format(AUTH0_DOMAIN), data=token_payload
         )
+        logger.debug(f"Sending URL: https://{AUTH0_DOMAIN}/token")
+        logger.debug(token_response.json())
+
 
         token_data = token_response.json()
         if token_response.status_code == 200:

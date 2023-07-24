@@ -109,6 +109,8 @@ async def connection_successful(sid):
         "local",
         "custom",
     ]:
+        print(session.db_client)
+        print(session.auth_client.user_infos)
         await session.db_client.create_user(session.auth_client.user_infos)
 
     if config.code.on_chat_start:

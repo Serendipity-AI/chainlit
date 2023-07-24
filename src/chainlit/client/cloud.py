@@ -6,18 +6,19 @@ import aiohttp
 from python_graphql_client import GraphqlClient
 
 from chainlit.client.base import UserDict
-
+from chainlit.cli import auth
 from .base import BaseDBClient, BaseAuthClient, PaginatedResponse, PageInfo, UserDict
 
 from chainlit.logger import logger
 from chainlit.config import config
+import json
 
 
 class GraphQLClient:
     def __init__(self, project_id: str, access_token: str):
         self.project_id = project_id
         self.headers = {
-            "Authorization": access_token,
+            "Authorization": f"Bearer {access_token}",
             "content-type": "application/json",
         }
         graphql_endpoint = f"{config.chainlit_server}/api/graphql"
@@ -64,6 +65,7 @@ class CloudAuthClient(BaseAuthClient, GraphQLClient):
         data = {"projectId": self.project_id}
 
         async with aiohttp.ClientSession() as session:
+            logger.info(f"Fetching user infos from {config.chainlit_server}")
             async with session.post(
                 f"{config.chainlit_server}/api/me",
                 json=data,
@@ -71,9 +73,11 @@ class CloudAuthClient(BaseAuthClient, GraphQLClient):
             ) as r:
                 if not r.ok:
                     reason = await r.text()
+                    logger.error(f"Failed to get user infos. {r.status}: {reason}")
                     raise ValueError(f"Failed to get user infos. {r.status}: {reason}")
 
                 json = await r.json()
+                logger.debug(f"User infos: {json}")
                 self.user_infos = json
                 return self.user_infos
 
@@ -85,6 +89,54 @@ class CloudAuthClient(BaseAuthClient, GraphQLClient):
             logger.error(e)
             return False
 
+class OktaAuthClient(BaseAuthClient, GraphQLClient):
+    def __init__(self, project_id: str, access_token: str):
+        super().__init__(project_id, access_token)
+
+    async def get_user_infos(
+        self,
+    ) -> UserDict:
+        async with aiohttp.ClientSession() as session:
+            logger.info(f"Fetching user infos from https://{auth.AUTH0_DOMAIN}/userinfo")
+            logger.info(f"Headers: {self.headers}")
+            async with session.get(
+                f"https://{auth.AUTH0_DOMAIN}/userinfo",
+                headers=self.headers,
+            ) as r:
+                if not r.ok:
+                    reason = await r.text()
+                    logger.error(f"Failed to get user infos. {r.status}: {reason}")
+                    raise ValueError(f"Failed to get user infos. {r.status}: {reason}")
+
+                res = await r.json()
+                logger.info(f"                 User infos: {res}")
+                # replace all characters that are not digits with digits in the id and store it as new_id:
+                formatted_json:UserDict = {
+                    "name":" ".join([res["given_name"], res["family_name"]]),
+                    "email": res["email"],
+                    "id": int("".join([i for i in res["sub"] if i.isdigit()])),
+                    "role":""
+                }
+                print("USERINFO")
+                print(self.user_infos)
+                if "serendipityai" in str(formatted_json.get("email")):
+                    formatted_json["role"] = "OWNER"
+                else:
+                    formatted_json["role"] = "MEMBER"
+
+                self.user_infos = formatted_json
+
+
+                
+                return self.user_infos
+
+    async def is_project_member(self) -> bool:
+        try:
+            user = await self.get_user_infos()
+            return user["role"] != "ANONYMOUS"
+        except ValueError as e:
+            logger.error(e)
+            return False
 
 class CloudDBClient(BaseDBClient, GraphQLClient):
     conversation_id: Optional[str] = None
