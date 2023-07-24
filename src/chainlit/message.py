@@ -1,10 +1,10 @@
 from typing import List, Dict, Union
 from abc import ABC, abstractmethod
 import uuid
-import asyncio
 from datetime import datetime, timezone
 
 from chainlit.telemetry import trace_event
+from chainlit.client.base import MessageDict
 from chainlit.context import get_emitter
 from chainlit.config import config
 from chainlit.types import (
@@ -20,16 +20,18 @@ from chainlit.logger import logger
 
 
 class MessageBase(ABC):
-    id: int = None
-    temp_id: str = None
+    id: str = None
     streaming = False
     created_at: int = None
-    fail_on_persist_error: bool = True
+    fail_on_persist_error: bool = False
+    persisted = False
 
     def __post_init__(self) -> None:
         trace_event(f"init {self.__class__.__name__}")
-        self.temp_id = uuid.uuid4().hex
-        self.created_at = datetime.now(timezone.utc).isoformat()
+        if not self.id:
+            self.id = str(uuid.uuid4())
+        if not self.created_at:
+            self.created_at = datetime.now(timezone.utc).isoformat()
         self.emitter = get_emitter()
 
     @abstractmethod
@@ -38,11 +40,13 @@ class MessageBase(ABC):
 
     async def _create(self):
         msg_dict = self.to_dict()
-        if self.emitter.db_client and not self.id:
+        if self.emitter.db_client and not self.persisted:
             try:
-                self.id = await self.emitter.db_client.create_message(msg_dict)
-                if self.id:
-                    msg_dict["id"] = self.id
+                persisted_id = await self.emitter.db_client.create_message(msg_dict)
+                if persisted_id:
+                    msg_dict["id"] = persisted_id
+                    self.id = persisted_id
+                    self.persisted = True
             except Exception as e:
                 if self.fail_on_persist_error:
                     raise e
@@ -81,9 +85,12 @@ class MessageBase(ABC):
 
         return True
 
-    async def send(self) -> Union[str, int]:
+    async def send(self) -> str:
         if self.content is None:
             self.content = ""
+
+        if config.code.author_rename:
+            self.author = await config.code.author_rename(self.author)
 
         msg_dict = await self._create()
 
@@ -92,7 +99,7 @@ class MessageBase(ABC):
 
         await self.emitter.send_message(msg_dict)
 
-        return self.id or self.temp_id
+        return self.id
 
     async def stream_token(self, token: str, is_sequence=False):
         """
@@ -110,9 +117,7 @@ class MessageBase(ABC):
         else:
             self.content += token
 
-        await self.emitter.send_token(
-            id=self.id or self.temp_id, token=token, is_sequence=is_sequence
-        )
+        await self.emitter.send_token(id=self.id, token=token, is_sequence=is_sequence)
 
 
 class Message(MessageBase):
@@ -126,7 +131,8 @@ class Message(MessageBase):
         prompt (str, optional): The prompt used to generate the message. If provided, enables the prompt playground for this message.
         llm_settings (LLMSettings, optional): Settings of the LLM used to generate the prompt. This is useful for debug purposes in the prompt playground.
         language (str, optional): Language of the code is the content is code. See https://react-code-blocks-rajinwonderland.vercel.app/?path=/story/codeblock--supported-languages for a list of supported languages.
-        indent (int, optional): If positive, the message will be nested in the UI.
+        parent_id (str, optional): If provided, the message will be nested inside the parent in the UI.
+        indent (int, optional): If positive, the message will be nested in the UI. (deprecated, use parent_id instead)
         actions (List[Action], optional): A list of actions to send with the message.
         elements (List[Element], optional): A list of elements to send with the message.
     """
@@ -138,36 +144,57 @@ class Message(MessageBase):
         prompt: str = None,
         llm_settings: LLMSettings = None,
         language: str = None,
+        parent_id: str = None,
         indent: int = 0,
-        actions: List[Action] = [],
-        elements: List[Element] = [],
+        actions: List[Action] = None,
+        elements: List[Element] = None,
     ):
         self.content = content
         self.author = author
         self.prompt = prompt
         self.language = language
+        self.parent_id = parent_id
         self.indent = indent
-        self.actions = actions
-        self.elements = elements
-        self.llmSettings = None
+        self.actions = actions if actions is not None else []
+        self.elements = elements if elements is not None else []
+        self.llm_settings = None
 
         if llm_settings is None and prompt is not None:
-            self.llmSettings = LLMSettings().to_dict()
+            self.llm_settings = LLMSettings().to_dict()
 
         if llm_settings:
-            self.llmSettings = llm_settings.to_dict()
+            self.llm_settings = llm_settings.to_dict()
 
         super().__post_init__()
 
+    @classmethod
+    def from_dict(self, _dict: MessageDict):
+        message = Message(
+            content=_dict["content"],
+            author=_dict.get("author"),
+            prompt=_dict.get("prompt"),
+            llm_settings=_dict.get("llmSettings"),
+            language=_dict.get("language"),
+            parent_id=_dict.get("parentId"),
+            indent=_dict.get("indent", 0),
+        )
+
+        if _id := _dict.get("id"):
+            message.id = _id
+        if created_at := _dict.get("createdAt"):
+            message.created_at = created_at
+
+        return message
+
     def to_dict(self):
         _dict = {
-            "tempId": self.temp_id,
             "createdAt": self.created_at,
             "content": self.content,
             "author": self.author,
             "prompt": self.prompt,
-            "llmSettings": self.llmSettings,
+            "llmSettings": self.llm_settings,
             "language": self.language,
+            "parentId": self.parent_id,
             "indent": self.indent,
         }
 
@@ -183,6 +210,9 @@ class Message(MessageBase):
         """
         trace_event("send_message")
         id = await super().send()
+
+        if not self.parent_id:
+            self.emitter.session.root_message = self
 
         for action in self.actions:
             await action.send(for_id=str(id))
@@ -200,17 +230,15 @@ class Message(MessageBase):
         trace_event("send_message")
         await super().update()
 
-        id = self.id or self.temp_id
-
         actions_to_update = [action for action in self.actions if action.forId is None]
 
-        elements_to_update = [el for el in self.elements if id not in el.for_ids]
+        elements_to_update = [el for el in self.elements if self.id not in el.for_ids]
 
         for action in actions_to_update:
-            await action.send(for_id=str(id))
+            await action.send(for_id=self.id)
 
         for element in elements_to_update:
-            await element.send(for_id=str(id))
+            await element.send(for_id=self.id)
 
         return True
 
@@ -242,7 +270,7 @@ class ErrorMessage(MessageBase):
 
     def to_dict(self):
         return {
-            "tempId": self.temp_id,
+            "id": self.id,
             "createdAt": self.created_at,
             "content": self.content,
             "author": self.author,
@@ -295,7 +323,7 @@ class AskUserMessage(AskMessageBase):
 
     def to_dict(self):
         return {
-            "tempId": self.temp_id,
+            "id": self.id,
             "createdAt": self.created_at,
             "content": self.content,
             "author": self.author,
@@ -358,7 +386,7 @@ class AskFileMessage(AskMessageBase):
 
     def to_dict(self):
         return {
-            "tempId": self.temp_id,
+            "id": self.id,
             "createdAt": self.created_at,
             "content": self.content,
             "author": self.author,

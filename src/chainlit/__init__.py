@@ -8,13 +8,8 @@ if TYPE_CHECKING:
 
 from chainlit.lc import (
     LANGCHAIN_INSTALLED,
-    langchain_factory,
-    langchain_postprocess,
-    langchain_run,
-    langchain_rename,
 )
-from chainlit.llama_index import LLAMA_INDEX_INSTALLED, llama_index_factory
-from chainlit.langflow import langflow_factory
+from chainlit.llama_index import LLAMA_INDEX_INSTALLED
 from chainlit.utils import wrap_user_function
 from chainlit.config import config
 from chainlit.telemetry import trace
@@ -65,7 +60,7 @@ def on_message(func: Callable) -> Callable:
     The decorated function is called every time a new message is received.
 
     Args:
-        func (Callable[[str], Any]): The function to be called when a new message is received. Takes the input message.
+        func (Callable[[str, str], Any]): The function to be called when a new message is received. Takes the input message and the message id.
 
     Returns:
         Callable[[str], Any]: The decorated on_message function.
@@ -88,6 +83,21 @@ def on_chat_start(func: Callable) -> Callable:
     """
 
     config.code.on_chat_start = wrap_user_function(func, with_task=True)
+    return func
+
+
+@trace
+def author_rename(func: Callable[[str], str]) -> Callable[[str], str]:
+    """
+    Useful to rename the author of message to display more friendly author names in the UI.
+    Args:
+        func (Callable[[str], str]): The function to be called to rename an author. Takes the original author name as parameter.
+
+    Returns:
+        Callable[[Any, str], Any]: The decorated function.
+    """
+
+    config.code.author_rename = wrap_user_function(func)
     return func
 
 
@@ -156,6 +166,7 @@ __all__ = [
     "Text",
     "Avatar",
     "Pyplot",
+    "File",
     "Task",
     "TaskList",
     "TaskStatus",
@@ -164,15 +175,10 @@ __all__ = [
     "ErrorMessage",
     "AskUserMessage",
     "AskFileMessage",
-    "langchain_factory",
-    "langchain_postprocess",
-    "langchain_run",
-    "langchain_rename",
-    "llama_index_factory",
-    "langflow_factory",
     "on_chat_start",
     "on_stop",
     "action_callback",
+    "author_rename",
     "sleep",
     "LangchainCallbackHandler",
     "AsyncLangchainCallbackHandler",
