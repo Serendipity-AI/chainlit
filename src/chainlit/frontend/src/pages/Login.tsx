@@ -9,11 +9,7 @@ export default function Login() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      loginWithRedirect({
-        authorizationParams: {
-          audience: 'chainlit-cloud'
-        }
-      });
+      loginWithRedirect();
     } else navigate('/');
   }, [isAuthenticated]);
 

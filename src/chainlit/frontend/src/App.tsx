@@ -95,11 +95,7 @@ function App() {
 
   useEffect(() => {
     if (isAuthenticated && accessToken === undefined) {
-      getAccessTokenSilently({
-        authorizationParams: {
-          audience: 'chainlit-cloud'
-        }
-      })
+      getAccessTokenSilently()
         .then((token) => setAccessToken(token))
         .catch((err) => {
           console.error(err);

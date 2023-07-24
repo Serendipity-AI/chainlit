@@ -13,8 +13,8 @@ import os
 import json
 
 
-AUTH0_DOMAIN = "auth.chainlit.io"
-AUTH0_CLIENT_ID = "ADo93BBXDn8Z35lEi8arCWiR7C0ncrjx"
+AUTH0_DOMAIN = "forumgpt.uk.auth0.com"
+AUTH0_CLIENT_ID = "CzZ2QnCYiMVwHRjSAhoS1lpsDMqpJv5r"
 ALGORITHMS = ["HS256"]
 
 
@@ -97,8 +97,7 @@ def login():
 
     device_code_payload = {
         "client_id": AUTH0_CLIENT_ID,
-        "scope": "openid profile email",
-        "audience": "chainlit-cloud",
+        "scope": "openid profile email"
     }
     device_code_response = requests.post(
         "https://{}/oauth/device/code".format(AUTH0_DOMAIN), data=device_code_payload

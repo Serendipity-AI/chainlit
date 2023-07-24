@@ -14,8 +14,8 @@ export default memo(function AuthProvider({ children }: Props) {
   if (pSettings?.project?.id) {
     return (
       <Auth0Provider
-        domain="https://auth.chainlit.io"
-        clientId="ADo93BBXDn8Z35lEi8arCWiR7C0ncrjx"
+        domain="forumgpt.uk.auth0.com"
+        clientId="CzZ2QnCYiMVwHRjSAhoS1lpsDMqpJv5r"
         authorizationParams={{
           redirect_uri: `${window.location.origin}/api/auth/callback`
         }}
