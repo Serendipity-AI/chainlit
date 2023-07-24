@@ -244,8 +244,6 @@ def load_settings():
 
         ui_settings = UISettings(**ui_settings)
 
-        
-
         return {
             "ui": ui_settings,
             "project": project_settings,

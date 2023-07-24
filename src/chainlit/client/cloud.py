@@ -89,6 +89,7 @@ class CloudAuthClient(BaseAuthClient, GraphQLClient):
             logger.error(e)
             return False
 
+
 class OktaAuthClient(BaseAuthClient, GraphQLClient):
     def __init__(self, project_id: str, access_token: str):
         super().__init__(project_id, access_token)
@@ -97,7 +98,9 @@ class OktaAuthClient(BaseAuthClient, GraphQLClient):
         self,
     ) -> UserDict:
         async with aiohttp.ClientSession() as session:
-            logger.info(f"Fetching user infos from https://{auth.AUTH0_DOMAIN}/userinfo")
+            logger.info(
+                f"Fetching user infos from https://{auth.AUTH0_DOMAIN}/userinfo"
+            )
             logger.info(f"Headers: {self.headers}")
             async with session.get(
                 f"https://{auth.AUTH0_DOMAIN}/userinfo",
@@ -111,11 +114,11 @@ class OktaAuthClient(BaseAuthClient, GraphQLClient):
                 res = await r.json()
                 logger.info(f"                 User infos: {res}")
                 # replace all characters that are not digits with digits in the id and store it as new_id:
-                formatted_json:UserDict = {
-                    "name":" ".join([res["given_name"], res["family_name"]]),
+                formatted_json: UserDict = {
+                    "name": " ".join([res["given_name"], res["family_name"]]),
                     "email": res["email"],
                     "id": int("".join([i for i in res["sub"] if i.isdigit()])),
-                    "role":""
+                    "role": "",
                 }
                 print("USERINFO")
                 print(self.user_infos)
@@ -126,8 +129,6 @@ class OktaAuthClient(BaseAuthClient, GraphQLClient):
 
                 self.user_infos = formatted_json
 
-
-                
                 return self.user_infos
 
     async def is_project_member(self) -> bool:
@@ -137,6 +138,7 @@ class OktaAuthClient(BaseAuthClient, GraphQLClient):
         except ValueError as e:
             logger.error(e)
             return False
+
 
 class CloudDBClient(BaseDBClient, GraphQLClient):
     conversation_id: Optional[str] = None

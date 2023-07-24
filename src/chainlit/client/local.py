@@ -55,6 +55,7 @@ class LocalDBClient(BaseDBClient):
 
     async def create_user(self, variables: UserDict):
         from prisma.models import User
+
         print("create_user")
         print(f"variables: {variables}")
         user = await User.prisma().find_unique(where={"id": variables["id"]})

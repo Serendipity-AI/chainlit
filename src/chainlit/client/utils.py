@@ -13,7 +13,7 @@ async def get_auth_client(authorization: str) -> BaseAuthClient:
     if not config.project.public and not authorization:
         # Refuse connection if the app is private and no access token is provided
         trace_event("no_access_token")
-        #raise ConnectionRefusedError("No access token provided")
+        # raise ConnectionRefusedError("No access token provided")
     elif authorization and config.project.id:
         print(config.project)
         if config.project.auth == "self-hosted":

@@ -101,7 +101,7 @@ def login():
 
     device_code_payload = {
         "client_id": AUTH0_CLIENT_ID,
-        "scope": "openid profile email"
+        "scope": "openid profile email",
     }
     device_code_response = requests.post(
         "https://{}/oauth/device/code".format(AUTH0_DOMAIN), data=device_code_payload
@@ -129,7 +129,6 @@ def login():
         )
         logger.debug(f"Sending URL: https://{AUTH0_DOMAIN}/token")
         logger.debug(token_response.json())
-
 
         token_data = token_response.json()
         if token_response.status_code == 200:

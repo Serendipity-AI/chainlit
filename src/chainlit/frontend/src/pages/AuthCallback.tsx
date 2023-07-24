@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 import { Alert } from '@mui/material';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { accessTokenState, roleState } from 'state/user';
-
 
 import { useAuth } from 'hooks/oktaauth';
 
+import { accessTokenState, roleState } from 'state/user';
+
 export default function AuthCallback() {
   console.log('AuthCallback');
-  const [queryParameters] = useSearchParams()
+  const [queryParameters] = useSearchParams();
   const { user, error, oktaAuth } = useAuth();
   const navigate = useNavigate();
   const accessToken = useRecoilValue(accessTokenState);
@@ -26,7 +26,7 @@ export default function AuthCallback() {
       nonce: queryParameters.get('code') || '',
     });
   }*/
-  
+
   useEffect(() => {
     if (user) {
       navigate('/');

@@ -7,7 +7,7 @@ import { useAuth } from 'hooks/oktaauth';
 
 export default function AuthCallback() {
   const { isAuthenticated, error } = useAuth();
-  console.log(isAuthenticated, error)
+  console.log(isAuthenticated, error);
   const navigate = useNavigate();
 
   useEffect(() => {

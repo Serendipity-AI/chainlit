@@ -9,8 +9,8 @@ import ErrorBoundary from 'components/errorBoundary';
 import Playground from 'components/playground';
 import TaskList from 'components/tasklist';
 
-import { useAuth } from 'hooks/oktaauth';
 import useLocalChatHistory from 'hooks/localChatHistory';
+import { useAuth } from 'hooks/oktaauth';
 
 import { actionState } from 'state/action';
 import {

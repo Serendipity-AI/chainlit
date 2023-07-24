@@ -1,3 +1,4 @@
+import { LoginCallback } from '@okta/okta-react';
 import { useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import {
@@ -32,7 +33,6 @@ import { settingsState } from 'state/settings';
 import { accessTokenState, roleState } from 'state/user';
 
 import './App.css';
-import { LoginCallback } from '@okta/okta-react';
 
 const router = createBrowserRouter([
   {
@@ -82,7 +82,7 @@ function App() {
   const { theme: themeVariant } = useRecoilValue(settingsState);
   const [accessToken, setAccessToken] = useRecoilState(accessTokenState);
   const setRole = useSetRecoilState(roleState);
-  const { isAuthenticated, getAccessTokenSilently, logout } = useAuth()
+  const { isAuthenticated, getAccessTokenSilently, logout } = useAuth();
   const theme = makeTheme(themeVariant);
 
   useEffect(() => {
@@ -92,17 +92,16 @@ function App() {
   useEffect(() => {
     if (isAuthenticated && accessToken === undefined) {
       getAccessTokenSilently()
-      .then(token => setAccessToken(token.tokens.accessToken?.accessToken))
-      .catch((err) => {
-        console.error(err);
-        logout(
-        //   {
-        //   logoutParams: {
-        //     returnTo: window.location.origin
-        //   }
-        // }
-        );
-      });
+        .then((token) => setAccessToken(token.tokens.accessToken?.accessToken))
+        .catch((err) => {
+          console.error(err);
+          logout();
+          //   {
+          //   logoutParams: {
+          //     returnTo: window.location.origin
+          //   }
+          // }
+        });
       // if (token){
       //   console.log('App] Access token found', token)
       //   setAccessToken(token);
@@ -113,8 +112,7 @@ function App() {
       //       // returnTo: window.location.origin
       //     // }
       //   });
-      // } 
-
+      // }
     }
   }, [isAuthenticated, getAccessTokenSilently, accessToken, setAccessToken]);
 

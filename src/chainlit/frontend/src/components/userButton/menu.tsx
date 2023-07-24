@@ -1,3 +1,4 @@
+import { useOktaAuth } from '@okta/okta-react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -18,7 +19,6 @@ import { useAuth } from 'hooks/oktaauth';
 
 import { projectSettingsState } from 'state/project';
 import { settingsState } from 'state/settings';
-import { useOktaAuth } from '@okta/okta-react';
 
 interface Props {
   anchorEl: null | HTMLElement;
@@ -74,7 +74,7 @@ export default function UserMenu({ anchorEl, open, handleClose }: Props) {
     <MenuItem
       key="logout"
       onClick={() => {
-        oktaAuth.signOut({postLogoutRedirectUri: '/'});
+        oktaAuth.signOut({ postLogoutRedirectUri: '/' });
         handleClose();
       }}
     >
