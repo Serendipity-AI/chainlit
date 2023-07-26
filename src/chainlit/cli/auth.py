@@ -11,12 +11,16 @@ import time
 import webbrowser
 import os
 import json
+from chainlit.config import config
 
 
-AUTH0_DOMAIN = "forumgpt.uk.auth0.com"
-AUTH0_CLIENT_ID = "CzZ2QnCYiMVwHRjSAhoS1lpsDMqpJv5r"
+
+AUTH0_DOMAIN = config.project.auth0_domain
+AUTH0_CLIENT_ID = config.project.auth0_client_id
 ALGORITHMS = ["HS256"]
 
+print(f"AUTH0_DOMAIN: {AUTH0_DOMAIN}")
+print(f"AUTH0_CLIENT_ID: {AUTH0_CLIENT_ID}")
 
 def get_credentials_path():
     """

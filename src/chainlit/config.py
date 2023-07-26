@@ -190,6 +190,10 @@ class ProjectSettings:
     local_fs_path: str = None
     # Duration (in seconds) during which the session is saved when the connection is lost
     session_timeout: int = 3600
+    # Auth0 domain
+    auth0_domain: str = None
+    # Auth0 client ID
+    auth0_client_id: str = None
 
 
 @dataclass()
