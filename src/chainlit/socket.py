@@ -14,7 +14,7 @@ from chainlit.emitter import ChainlitEmitter
 from chainlit.action import Action
 from chainlit.message import Message, ErrorMessage
 from chainlit.telemetry import trace_event
-from chainlit.client.cloud import CloudAuthClient
+from chainlit.client.cloud import CloudAuthClient, SelfHostedAuthClient
 from chainlit.logger import logger
 from chainlit.server import socket
 
@@ -74,6 +74,7 @@ async def connect(sid, environ, auth):
 
     try:
         auth_client = await get_auth_client(authorization)
+        print(f"Got auth client of type {type(auth_client)}")
         db_client = await get_db_client(authorization, auth_client.user_infos)
         user_env = load_user_env(user_env)
     except ConnectionRefusedError as e:
@@ -103,10 +104,17 @@ async def connection_successful(sid):
     emitter_var.set(ChainlitEmitter(session))
     loop_var.set(asyncio.get_event_loop())
 
-    if isinstance(session.auth_client, CloudAuthClient) and config.project.database in [
-        "local",
-        "custom",
-    ]:
+    if (
+        isinstance(session.auth_client, CloudAuthClient)
+        or isinstance(session.auth_client, SelfHostedAuthClient)
+        and config.project.database
+        in [
+            "local",
+            "custom",
+        ]
+    ):
+        print("Creating user...")
+        print(session.auth_client.user_infos)
         await session.db_client.create_user(session.auth_client.user_infos)
 
     if config.code.on_chat_start:

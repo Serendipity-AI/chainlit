@@ -194,6 +194,10 @@ class ProjectSettings:
     auth0_domain: str = None
     # Auth0 client ID
     auth0_client_id: str = None
+    # Auth Server - used to specify whether to use chainlit or a self hosted domain without projects
+    auth_server: Optional[Literal["self-hosted", "chainlit"]] = None
+    # Owner Whitelist - for single project workspaces, email pattern to match site owners. Everybody else is a member
+    owner_whitelist_domain: str = None
 
 
 @dataclass()

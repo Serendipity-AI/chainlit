@@ -3,7 +3,7 @@ from fastapi import Request
 from chainlit.config import config
 from chainlit.client.base import BaseDBClient, BaseAuthClient, UserDict
 from chainlit.client.local import LocalAuthClient, LocalDBClient
-from chainlit.client.cloud import CloudAuthClient, CloudDBClient
+from chainlit.client.cloud import CloudAuthClient, CloudDBClient, SelfHostedAuthClient
 from chainlit.telemetry import trace_event
 
 
@@ -13,6 +13,13 @@ async def get_auth_client(authorization: str) -> BaseAuthClient:
         # Refuse connection if the app is private and no access token is provided
         trace_event("no_access_token")
         raise ConnectionRefusedError("No access token provided")
+    elif config.project.auth_server == "self-hosted" and authorization:
+        auth_client = SelfHostedAuthClient(
+            access_token=authorization,
+        )
+        # Check if the user is a member of the project - always true for self-hosted
+        is_project_member = await auth_client.is_project_member()
+        return auth_client
     elif authorization and config.project.id:
         # Create the auth cloud client
         auth_client = CloudAuthClient(

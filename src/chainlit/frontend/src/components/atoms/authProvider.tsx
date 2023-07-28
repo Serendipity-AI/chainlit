@@ -7,15 +7,14 @@ import { projectSettingsState } from 'state/project';
 interface Props {
   children: JSX.Element;
 }
-
 export default memo(function AuthProvider({ children }: Props) {
   const pSettings = useRecoilValue(projectSettingsState);
 
   if (pSettings?.project?.id) {
     return (
       <Auth0Provider
-        domain={import.meta.env.AUTH0_DOMAIN}
-        clientId={import.meta.env.AUTH0_CLIENT_ID}
+        domain={import.meta.env.VITE_AUTH0_DOMAIN}
+        clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
         authorizationParams={{
           redirect_uri: `${window.location.origin}/api/auth/callback`
         }}

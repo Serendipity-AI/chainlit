@@ -16,6 +16,7 @@ from chainlit.config import config
 class GraphQLClient:
     def __init__(self, project_id: str, access_token: str):
         self.project_id = project_id
+        self.access_token = access_token
         self.headers = {
             "Authorization": access_token,
             "content-type": "application/json",
@@ -52,6 +53,46 @@ class GraphQLClient:
         :return: The response data as a dictionary.
         """
         return self.graphql_client.execute_async(query=mutation, variables=variables)
+
+
+class SelfHostedAuthClient(BaseAuthClient, GraphQLClient):
+    def __init__(self, access_token: str):
+        super().__init__("DEFAULT", access_token)
+
+    async def get_user_infos(
+        self,
+    ) -> UserDict:
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"https://{config.project.auth0_domain}/userinfo",
+                headers=headers,
+            ) as r:
+                if not r.ok:
+                    reason = await r.text()
+                    raise ValueError(f"Failed to get user infos. {r.status}: {reason}")
+
+                json = await r.json()
+                json["id"] = json["sub"]
+                json["role"] = (
+                    "OWNER"
+                    if config.project.owner_whitelist_domain in json["email"]
+                    else "USER"
+                )
+                user_infos: UserDict = {
+                    "id": json["id"],
+                    "name": json["name"],
+                    "email": json["email"],
+                    "role": json["role"],
+                }
+                self.user_infos = user_infos
+                return self.user_infos
+
+    async def is_project_member(self) -> bool:
+        user = await self.get_user_infos()
+        return user["role"] != "ANONYMOUS"
 
 
 class CloudAuthClient(BaseAuthClient, GraphQLClient):

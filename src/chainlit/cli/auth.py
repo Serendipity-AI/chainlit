@@ -14,13 +14,10 @@ import json
 from chainlit.config import config
 
 
-
 AUTH0_DOMAIN = config.project.auth0_domain
 AUTH0_CLIENT_ID = config.project.auth0_client_id
 ALGORITHMS = ["HS256"]
 
-print(f"AUTH0_DOMAIN: {AUTH0_DOMAIN}")
-print(f"AUTH0_CLIENT_ID: {AUTH0_CLIENT_ID}")
 
 def get_credentials_path():
     """
@@ -101,7 +98,7 @@ def login():
 
     device_code_payload = {
         "client_id": AUTH0_CLIENT_ID,
-        "scope": "openid profile email"
+        "scope": "openid profile email",
     }
     device_code_response = requests.post(
         "https://{}/oauth/device/code".format(AUTH0_DOMAIN), data=device_code_payload
